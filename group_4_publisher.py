@@ -1,49 +1,21 @@
 import paho.mqtt.client as mqtt
-import time
 import json
 import random
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
-from typing import Any
-
-class DataGenerator:
-    def __init__(self):
-        self.start_id = 111
-        self.researchers = ["Dr. Smith", "Dr. Garcia", "Dr. Lee", "Dr. Patel"]
-        self.plant_types = ["Tomato", "Cucumber", "Basil", "Lettuce"]
-        self.growth_stages = ["Seedling", "Vegetative", "Flowering", "Fruiting"]
-        
-    def create_data(self, base_temp: float = 23.0, base_humidity: float = 65.0) -> dict[str, Any]:
-        """Generate plant monitoring data with configurable base values"""
-        data = {
-            'id': self.start_id,
-            'researcher': random.choice(self.researchers),
-            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'plant_metrics': {
-                'height_cm': round(random.gauss(45, 8), 1),
-                'leaf_count': round(random.gauss(24, 6)),
-                'stem_diameter_mm': round(random.gauss(8.5, 1.2), 2)
-            },
-            'environmental_conditions': {
-                'temperature_c': round(random.gauss(base_temp, 2), 1),
-                'humidity_pct': round(random.gauss(base_humidity, 10)),
-                'light_intensity_lux': round(random.gauss(15000, 3000))
-            },
-            'soil_data': {
-                'moisture_pct': round(random.gauss(70, 8)),
-                'ph_level': round(random.gauss(6.5, 0.4), 1),
-                'nutrient_index': round(random.gauss(450, 80))
-            },
-            'plant_type': random.choice(self.plant_types),
-            'growth_stage': random.choice(self.growth_stages),
-            'health_score': round(random.gauss(85, 12))
-        }
-        self.start_id += 1
-        return data
+from group_4_data_generator import DataGenerator
 
 class PublisherGUI:
+    """
+    A class to handle the MQTT publisher GUI.
+    
+    This class creates a GUI interface for publishing plant monitoring data,
+    allowing configuration of data generation parameters and publishing settings.
+    """
+    
     def __init__(self, root):
+        """Initialize the PublisherGUI with a Tkinter root window."""
         self.root = root
         self.root.title("Plant Monitoring Publisher")
         
@@ -69,6 +41,7 @@ class PublisherGUI:
         self.setup_gui()
         
     def setup_gui(self):
+        """Set up the GUI components and layout."""
         # Control frame
         control_frame = ttk.LabelFrame(self.root, text="Controls", padding="10")
         control_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
@@ -103,10 +76,17 @@ class PublisherGUI:
         self.status_text.grid(row=0, column=0, padx=5, pady=5)
         
     def log_status(self, message):
+        """
+        Log a status message to the status text widget.
+        
+        Args:
+            message (str): Message to log
+        """
         self.status_text.insert(tk.END, f"{datetime.now().strftime('%H:%M:%S')} - {message}\n")
         self.status_text.see(tk.END)
         
     def start_publishing(self):
+        """Start publishing data to the MQTT broker."""
         if not self.publishing:
             self.publishing = True
             self.client.connect(self.url, self.port)
@@ -114,12 +94,23 @@ class PublisherGUI:
             self.publish_loop()
             
     def stop_publishing(self):
+        """Stop publishing data and disconnect from the MQTT broker."""
         if self.publishing:
             self.publishing = False
             self.client.disconnect()
             self.log_status("Disconnected from broker")
             
     def publish_loop(self):
+        """
+        Main publishing loop that generates and publishes data.
+        
+        This method:
+        1. Generates new data using the DataGenerator
+        2. Optionally simulates missed transmissions
+        3. Optionally simulates wild data values
+        4. Publishes the data to the MQTT broker
+        5. Schedules the next publication
+        """
         if not self.publishing:
             return
             
@@ -152,6 +143,7 @@ class PublisherGUI:
         self.root.after(int(self.publish_interval.get() * 1000), self.publish_loop)
 
 def main():
+    """Main function to create and run the publisher GUI."""
     root = tk.Tk()
     app = PublisherGUI(root)
     root.mainloop()
